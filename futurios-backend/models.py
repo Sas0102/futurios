@@ -5,6 +5,9 @@ from database import Base
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy import Column, String, Text
 from sqlalchemy import Boolean
+from sqlalchemy.orm import relationship
+import secrets
+import hashlib
 
 class User(Base):
     __tablename__ = "users"
@@ -126,3 +129,50 @@ class CallSummary(Base):
     transfer_department = Column(String, nullable=True)
     turn_count = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class DemoRequest(Base):
+    __tablename__ = "demo_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    company_name = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
+    message = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Plan(Base):
+    __tablename__ = "plans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, unique=True)
+    display_name = Column(String, nullable=False)
+    price_per_month = Column(Integer, nullable=True)
+    limits = Column(JSONB, nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organisation_id = Column(Integer, ForeignKey("organisations.id"), nullable=False, unique=True)
+    plan_id = Column(Integer, ForeignKey("plans.id"), nullable=False)
+    started_at = Column(DateTime(timezone=True), server_default=func.now())
+    custom_limits = Column(JSONB, nullable=True)
+
+    plan = relationship("Plan")
+
+
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organisation_id = Column(Integer, ForeignKey("organisations.id"), nullable=False)
+    key_hash = Column(String, nullable=False, unique=True)
+    key_prefix = Column(String, nullable=False)
+    name = Column(String, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_used_at = Column(DateTime(timezone=True), nullable=True)

@@ -207,3 +207,80 @@ class CallSummaryOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class OrganisationUsageOut(BaseModel):
+    organisation_id: int
+    total_agents: int
+    total_calls: int
+    calls_this_month: int
+
+class DemoRequestCreate(BaseModel):
+    name: str
+    email: EmailStr
+    company_name: str | None = None
+    phone_number: str | None = None
+    message: str | None = None
+
+
+class DemoRequestOut(BaseModel):
+    id: int
+    name: str
+    email: str
+    company_name: str | None
+    phone_number: str | None
+    message: str | None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class PlanOut(BaseModel):
+    id: int
+    name: str
+    display_name: str
+    price_per_month: int | None
+    limits: dict
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+
+class SubscriptionOut(BaseModel):
+    id: int
+    organisation_id: int
+    plan: PlanOut
+    started_at: datetime
+    custom_limits: dict | None
+
+    class Config:
+        from_attributes = True
+
+class ApiKeyCreate(BaseModel):
+    name: str | None = None
+
+
+class ApiKeyCreatedOut(BaseModel):
+    id: int
+    organisation_id: int
+    name: str | None
+    key_prefix: str
+    raw_key: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ApiKeyOut(BaseModel):
+    id: int
+    organisation_id: int
+    name: str | None
+    key_prefix: str
+    is_active: bool
+    created_at: datetime
+    last_used_at: datetime | None
+
+    class Config:
+        from_attributes = True

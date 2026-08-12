@@ -35,7 +35,7 @@ from business_logic import (
     handle_appointment_enquiry, generate_receptionist_reply,
     is_within_business_hours, find_matching_faq,
     is_emergency, detect_transfer_department,
-    calculate_confidence,
+    calculate_confidence, IST,
 )
 from models import Appointment, CallbackRequest, CallSummary
 from schemas import AppointmentOut, CallbackRequestOut, CallSummaryOut
@@ -43,7 +43,18 @@ from schemas import AppointmentOut, CallbackRequestOut, CallSummaryOut
 from schemas import SimulateRequest, SimulateResponse
 from business_logic import handle_appointment_enquiry
 from auth import require_super_admin
-
+from datetime import datetime
+from schemas import OrganisationUsageOut
+from models import DemoRequest
+from schemas import DemoRequestCreate, DemoRequestOut
+from models import Plan, Subscription
+from schemas import SubscriptionOut
+from schemas import PlanOut
+from models import ApiKey, Subscription
+from schemas import ApiKeyCreate, ApiKeyCreatedOut, ApiKeyOut
+from auth import generate_api_key
+from auth import get_organisation_from_api_key
+from models import User, Organisation, Membership, Agent, VoiceSession, ConversationTurn, FAQ, Appointment, CallbackRequest, CallSummary
 
 app = FastAPI(title=settings.app_name)
 
@@ -61,6 +72,26 @@ app.add_middleware(
 def health_check():
     return {"status": "ok", "environment": settings.environment}
 
+def check_plan_limit(db: Session, organisation_id: int, limit_key: str, current_count: int):
+    """
+    Checks whether an organisation has room under a given plan limit.
+    limit_key must match a key in the plan's `limits` JSON (e.g. "max_agents").
+    A limit value of None means unlimited — always allowed.
+    Raises 403 if the limit is reached or exceeded.
+    """
+    subscription = db.query(Subscription).filter(Subscription.organisation_id == organisation_id).first()
+    if not subscription:
+        return
+
+    limit_value = subscription.plan.limits.get(limit_key)
+    if limit_value is None:
+        return
+
+    if current_count >= limit_value:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Plan limit reached: your current plan allows a maximum of {limit_value} for '{limit_key}'. Upgrade your plan to continue."
+        )
 
 @app.get("/db-check")
 def db_check():
@@ -106,6 +137,7 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
         "user": user,
     }
 
+
 @app.post("/organisations", response_model=OrganisationOut)
 def create_organisation(
     org_data: OrganisationCreate,
@@ -125,6 +157,12 @@ def create_organisation(
     db.add(membership)
     db.commit()
 
+    base_plan = db.query(Plan).filter(Plan.name == "base").first()
+    if base_plan:
+        subscription = Subscription(organisation_id=new_org.id, plan_id=base_plan.id)
+        db.add(subscription)
+        db.commit()
+
     return new_org
 
 
@@ -142,19 +180,21 @@ def create_agent(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Confirm the user belongs to this organisation
-    
     require_role(current_user.id, organisation_id, "admin", db)
 
+    current_agent_count = db.query(Agent).filter(Agent.organisation_id == organisation_id).count()
+    check_plan_limit(db, organisation_id, "max_agents", current_agent_count)
+
     new_agent = Agent(
-    name=agent_data.name,
-    description=agent_data.description,
-    status=agent_data.status,
-    organisation_id=organisation_id,
-    languages=agent_data.languages,
-    system_prompt=agent_data.system_prompt,
-    business_hours=agent_data.business_hours,
-    )
+        name=agent_data.name,
+        # ... rest unchanged
+        description=agent_data.description,
+        status=agent_data.status,
+        organisation_id=organisation_id,
+        languages=agent_data.languages,
+        system_prompt=agent_data.system_prompt,
+        business_hours=agent_data.business_hours,
+        )
     db.add(new_agent)
     db.commit()
     db.refresh(new_agent)
@@ -446,6 +486,9 @@ def add_member(
 ):
     require_role(current_user.id, organisation_id, "admin", db)
 
+    current_member_count = db.query(Membership).filter(Membership.organisation_id == organisation_id).count()
+    check_plan_limit(db, organisation_id, "max_team_members", current_member_count)
+
     user_to_add = db.query(User).filter(User.email == member_data.email).first()
     if not user_to_add:
         raise HTTPException(status_code=404, detail="No user found with this email")
@@ -625,6 +668,9 @@ def create_faq(
 ):
     require_role(current_user.id, organisation_id, "admin", db)
 
+    current_faq_count = db.query(FAQ).filter(FAQ.organisation_id == organisation_id).count()
+    check_plan_limit(db, organisation_id, "max_faqs", current_faq_count)
+
     new_faq = FAQ(
         organisation_id=organisation_id,
         question=faq_data.question,
@@ -662,3 +708,143 @@ def list_all_organisations(
     current_user: User = Depends(require_super_admin),
 ):
     return db.query(Organisation).all()
+
+
+@app.get("/organisations/{organisation_id}/usage", response_model=OrganisationUsageOut)
+def get_organisation_usage(
+    organisation_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not current_user.is_super_admin:
+        require_role(current_user.id, organisation_id, "admin", db)
+
+    total_agents = db.query(Agent).filter(Agent.organisation_id == organisation_id).count()
+    total_calls = db.query(CallSummary).filter(CallSummary.organisation_id == organisation_id).count()
+
+    now = datetime.now(IST)
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    calls_this_month = (
+        db.query(CallSummary)
+        .filter(CallSummary.organisation_id == organisation_id)
+        .filter(CallSummary.created_at >= month_start)
+        .count()
+    )
+
+    return OrganisationUsageOut(
+        organisation_id=organisation_id,
+        total_agents=total_agents,
+        total_calls=total_calls,
+        calls_this_month=calls_this_month,
+    )
+
+
+@app.post("/demo-requests", response_model=DemoRequestOut)
+def create_demo_request(demo_data: DemoRequestCreate, db: Session = Depends(get_db)):
+    new_request = DemoRequest(
+        name=demo_data.name,
+        email=demo_data.email,
+        company_name=demo_data.company_name,
+        phone_number=demo_data.phone_number,
+        message=demo_data.message,
+    )
+    db.add(new_request)
+    db.commit()
+    db.refresh(new_request)
+    return new_request
+
+
+@app.get("/admin/demo-requests", response_model=list[DemoRequestOut])
+def list_demo_requests(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_super_admin),
+):
+    return db.query(DemoRequest).order_by(DemoRequest.created_at.desc()).all()
+
+@app.get("/organisations/{organisation_id}/subscription", response_model=SubscriptionOut)
+def get_organisation_subscription(
+    organisation_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not current_user.is_super_admin:
+        require_role(current_user.id, organisation_id, "admin", db)
+
+    subscription = db.query(Subscription).filter(Subscription.organisation_id == organisation_id).first()
+    if not subscription:
+        raise HTTPException(status_code=404, detail="No subscription found for this organisation")
+    return subscription
+
+@app.get("/plans", response_model=list[PlanOut])
+def list_plans(db: Session = Depends(get_db)):
+    return db.query(Plan).filter(Plan.is_active == True).all()
+
+@app.post("/organisations/{organisation_id}/api-keys", response_model=ApiKeyCreatedOut)
+def create_api_key(
+    organisation_id: int,
+    key_data: ApiKeyCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_role(current_user.id, organisation_id, "admin", db)
+
+    subscription = db.query(Subscription).filter(Subscription.organisation_id == organisation_id).first()
+    if not subscription or not subscription.plan.limits.get("api_access"):
+        raise HTTPException(status_code=403, detail="API access is not available on your current plan")
+
+    raw_key, key_hash, key_prefix = generate_api_key()
+
+    new_key = ApiKey(
+        organisation_id=organisation_id,
+        key_hash=key_hash,
+        key_prefix=key_prefix,
+        name=key_data.name,
+    )
+    db.add(new_key)
+    db.commit()
+    db.refresh(new_key)
+
+    return ApiKeyCreatedOut(
+        id=new_key.id,
+        organisation_id=new_key.organisation_id,
+        name=new_key.name,
+        key_prefix=new_key.key_prefix,
+        raw_key=raw_key,
+        created_at=new_key.created_at,
+    )
+
+
+@app.get("/organisations/{organisation_id}/api-keys", response_model=list[ApiKeyOut])
+def list_api_keys(
+    organisation_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_role(current_user.id, organisation_id, "admin", db)
+    return db.query(ApiKey).filter(ApiKey.organisation_id == organisation_id).all()
+
+
+@app.delete("/organisations/{organisation_id}/api-keys/{key_id}")
+def revoke_api_key(
+    organisation_id: int,
+    key_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_role(current_user.id, organisation_id, "admin", db)
+
+    key = db.query(ApiKey).filter(ApiKey.id == key_id, ApiKey.organisation_id == organisation_id).first()
+    if not key:
+        raise HTTPException(status_code=404, detail="API key not found")
+
+    key.is_active = False
+    db.commit()
+    return {"detail": "API key revoked"}
+
+
+@app.get("/api/v1/agents", response_model=list[AgentOut])
+def list_agents_via_api_key(
+    organisation_id: int = Depends(get_organisation_from_api_key),
+    db: Session = Depends(get_db),
+):
+    return db.query(Agent).filter(Agent.organisation_id == organisation_id).all()

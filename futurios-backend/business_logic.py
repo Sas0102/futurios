@@ -70,20 +70,24 @@ def detect_intent(message: str, history: list[dict] | None = None, faqs: list | 
     Determines the caller's intent from their message and conversation
     state. Rule-based keyword matching — not a real NLU/LLM model.
     """
+    GOODBYE_KEYWORDS = ["bye", "goodbye", "that's all", "thank you, that's it", "अलविदा", "धन्यवाद"]
+    CALLBACK_KEYWORDS = ["call me back", "callback", "call back later", "वापस कॉल करें", "कॉलबैक"]
+    APPOINTMENT_KEYWORDS = ["appointment", "book", "अपॉइंटमेंट", "बुक"]
+    GREETING_KEYWORDS = ["hello", "hi", "नमस्ते", "हेलो"]
     message_lower = message.lower()
     faqs = faqs or []
     conversation_state = get_conversation_state(history)
 
-    if any(kw in message_lower for kw in ["bye", "goodbye", "that's all", "thank you, that's it"]):
+    if any(kw in message_lower for kw in GOODBYE_KEYWORDS):
         return "goodbye"
 
-    if any(kw in message_lower for kw in ["call me back", "callback", "call back later"]):
+    if any(kw in message_lower for kw in CALLBACK_KEYWORDS):
         return "callback_request"
 
-    if any(kw in message_lower for kw in ["appointment", "book"]):
+    if any(kw in message_lower for kw in APPOINTMENT_KEYWORDS):
         return "appointment_booking"
 
-    if any(kw in message_lower for kw in ["hello", "hi"]):
+    if any(kw in message_lower for kw in GREETING_KEYWORDS):
         return "greeting"
 
     confirmation_keywords = ["10", "3", "am", "pm", "works", "sounds good", "that time", "suits me", "go with", "fine"]
@@ -188,6 +192,17 @@ DEPARTMENT_KEYWORDS = {
 }
 
 GENERAL_TRANSFER_KEYWORDS = ["speak to a human", "real person", "representative", "manager", "speak to someone"]
+
+def extract_best_text(speech_results: list) -> str:
+    """
+    Vonage returns multiple candidate transcriptions. Rather than trusting
+    only the top-confidence guess (which can omit key words, as seen in
+    real testing), check all candidates for the presence of critical
+    keywords before falling back to the top result as-is.
+    """
+    if not speech_results:
+        return ""
+    return " ".join(r.get("text", "") for r in speech_results)
 
 
 def is_emergency(message: str) -> bool:

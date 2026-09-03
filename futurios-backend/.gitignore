@@ -27,3 +27,6 @@ ENV/
 .vscode/
 .DS_Store
 Thumbs.db
+
+private.key
+*.key

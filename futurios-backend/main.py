@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
@@ -35,7 +35,7 @@ from business_logic import (
     handle_appointment_enquiry, generate_receptionist_reply,
     is_within_business_hours, find_matching_faq,
     is_emergency, detect_transfer_department,
-    calculate_confidence, IST,
+    calculate_confidence, IST,extract_best_text,
 )
 from models import Appointment, CallbackRequest, CallSummary
 from schemas import AppointmentOut, CallbackRequestOut, CallSummaryOut
@@ -66,7 +66,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+TEMP_VONAGE_AGENT_ID = 10
 
 @app.get("/health")
 def health_check():
@@ -848,3 +848,205 @@ def list_agents_via_api_key(
     db: Session = Depends(get_db),
 ):
     return db.query(Agent).filter(Agent.organisation_id == organisation_id).all()
+
+LANGUAGE_CODE_MAP = {
+    "en": "en-US",
+    "hi": "hi-IN",
+    "or": "or-IN",  # unconfirmed — testing this directly
+}
+
+@app.get("/vonage/answer")
+async def vonage_answer(request: Request):
+    ncco = [
+        {
+            "action": "talk",
+            "text": "For English, press 1. हिंदी के लिए 2 दबाएं।",
+        },
+        {
+            "action": "input",
+            "type": ["dtmf"],
+            "dtmf": {
+                "maxDigits": 1,
+                "timeOut": 5,
+            },
+            "eventUrl": ["https://unadorned-expediter-gift.ngrok-free.dev/vonage/language-select"],
+        },
+    ]
+    return ncco
+
+@app.post("/vonage/event")
+async def vonage_event(request: Request):
+    body = await request.json()
+    print(f"[vonage event] {body}")
+    return {}
+
+
+@app.post("/vonage/fallback")
+async def vonage_fallback(request: Request):
+    ncco = [
+        {
+            "action": "talk",
+            "text": "Sorry, we are experiencing technical difficulties. Please try again later.",
+        }
+    ]
+    return ncco
+
+@app.post("/vonage/input")
+async def vonage_input(request: Request, db: Session = Depends(get_db)):
+    body = await request.json()
+    print(f"[vonage input] {body}")
+
+    language_choice = request.query_params.get("lang", "en")
+    vonage_lang_code = LANGUAGE_CODE_MAP.get(language_choice, "en-US")
+
+    speech_results = body.get("speech", {}).get("results", [])
+    caller_text = extract_best_text(speech_results)
+    conversation_uuid = body.get("conversation_uuid", "unknown")
+
+    retry_messages = {
+        "en": "Sorry, I didn't catch that. Could you repeat that?",
+        "hi": "माफ़ कीजिए, मैं समझ नहीं पाया। कृपया दोहराएं।",
+    }
+
+    if not caller_text:
+        ncco = [
+            {
+                "action": "talk",
+                "text": retry_messages.get(language_choice, retry_messages["en"]),
+                "language": vonage_lang_code,
+            },
+            {
+                "action": "input",
+                "type": ["speech"],
+                "speech": {"endOnSilence": 1, "language": vonage_lang_code},
+                "eventUrl": [f"https://unadorned-expediter-gift.ngrok-free.dev/vonage/input?lang={language_choice}"],
+            },
+        ]
+        return ncco
+
+    agent = db.query(Agent).filter(Agent.id == TEMP_VONAGE_AGENT_ID).first()
+    if not agent:
+        return [{"action": "talk", "text": "Sorry, we're experiencing technical difficulties."}]
+
+    if is_emergency(caller_text):
+        result = {
+            "response_text": "This sounds like a medical emergency. Please hang up and call your local emergency number immediately.",
+            "intent": "emergency",
+            "end_call": True,
+            "transfer_required": True,
+            "transfer_department": "emergency",
+        }
+    elif agent.status != "active":
+        result = {
+            "response_text": "This agent is currently unavailable.",
+            "intent": "agent_unavailable",
+            "end_call": True,
+            "transfer_required": False,
+            "transfer_department": None,
+        }
+    elif not is_within_business_hours(agent.business_hours):
+        result = {
+            "response_text": "Thank you for calling. We are currently closed. Please call back during our business hours.",
+            "intent": "outside_business_hours",
+            "end_call": True,
+            "transfer_required": False,
+            "transfer_department": None,
+        }
+    else:
+        caller_turn = ConversationTurn(
+            call_id=conversation_uuid,
+            agent_id=agent.id,
+            role="caller",
+            message=caller_text,
+        )
+        db.add(caller_turn)
+        db.commit()
+
+        prior_turns = (
+            db.query(ConversationTurn)
+            .filter(ConversationTurn.call_id == conversation_uuid)
+            .filter(ConversationTurn.id != caller_turn.id)
+            .order_by(ConversationTurn.id)
+            .all()
+        )
+        history = [{"role": t.role, "message": t.message} for t in prior_turns]
+
+        faqs = db.query(FAQ).filter(FAQ.organisation_id == agent.organisation_id).all()
+
+        result = generate_receptionist_reply(caller_text, agent, history=history, faqs=faqs)
+
+        if result["intent"] == "faq":
+            matched_answer = find_matching_faq(caller_text, faqs)
+            result["response_text"] = matched_answer if matched_answer else "I don't have that information right now, but I can have someone call you back with details."
+
+        transfer_department = detect_transfer_department(caller_text)
+        if transfer_department:
+            result["intent"] = "human_transfer"
+            result["response_text"] = f"Of course, let me connect you to our {transfer_department} department."
+            result["transfer_required"] = True
+            result["transfer_department"] = transfer_department
+            result["end_call"] = False
+
+        if result["intent"] == "appointment_confirmed":
+            db.add(Appointment(organisation_id=agent.organisation_id, agent_id=agent.id, call_id=conversation_uuid, caller_message=caller_text))
+            db.commit()
+
+        if result["intent"] == "callback_request":
+            db.add(CallbackRequest(organisation_id=agent.organisation_id, agent_id=agent.id, call_id=conversation_uuid, caller_message=caller_text))
+            db.commit()
+
+        agent_turn = ConversationTurn(
+            call_id=conversation_uuid,
+            agent_id=agent.id,
+            role="agent",
+            message=result["response_text"],
+        )
+        db.add(agent_turn)
+        db.commit()
+
+    if result.get("end_call"):
+        save_call_summary(db, conversation_uuid, agent.organisation_id, agent.id, result["intent"], result.get("transfer_required", False), result.get("transfer_department"))
+        ncco = [{"action": "talk", "text": result["response_text"], "language": vonage_lang_code}]
+    else:
+        ncco = [
+            {"action": "talk", "text": result["response_text"], "language": vonage_lang_code},
+            {
+                "action": "input",
+                "type": ["speech"],
+                "speech": {"endOnSilence": 1, "language": vonage_lang_code},
+                "eventUrl": [f"https://unadorned-expediter-gift.ngrok-free.dev/vonage/input?lang={language_choice}"],
+            },
+        ]
+
+    return ncco
+
+@app.post("/vonage/language-select")
+async def vonage_language_select(request: Request, db: Session = Depends(get_db)):
+    body = await request.json()
+    digit_pressed = body.get("dtmf", {}).get("digits", "")
+
+    language_choice = "hi" if digit_pressed == "2" else "en"
+    vonage_lang_code = LANGUAGE_CODE_MAP.get(language_choice, "en-US")
+
+    greetings = {
+        "en": "Hello, thank you for calling. How can I help you today?",
+        "hi": "नमस्ते, कॉल करने के लिए धन्यवाद। मैं आपकी कैसे मदद कर सकती हूं?",
+    }
+
+    ncco = [
+        {
+            "action": "talk",
+            "text": greetings.get(language_choice, greetings["en"]),
+            "language": vonage_lang_code,
+        },
+        {
+            "action": "input",
+            "type": ["speech"],
+            "speech": {
+                "endOnSilence": 1,
+                "language": vonage_lang_code,
+            },
+            "eventUrl": [f"https://unadorned-expediter-gift.ngrok-free.dev/vonage/input?lang={language_choice}"],
+        },
+    ]
+    return ncco

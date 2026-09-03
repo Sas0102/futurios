@@ -442,3 +442,50 @@ implemented):
 **Status:** this model is not yet called anywhere in the codebase. The
 current `/simulate` endpoint uses only the rule-based logic described
 throughout this document. Integration is planned future work.
+
+## Vonage Voice Integration (First Working Version)
+
+Real telephony integration is now functional, tested end-to-end with actual
+phone calls (not just /simulate text testing).
+
+### Setup
+- ngrok used to expose the local dev server publicly during testing
+  (`ngrok http 8000`) — free-tier URLs change on every restart; must be
+  updated in both the code (`eventUrl` in /vonage/answer) and the Vonage
+  Application's webhook settings whenever this happens
+- Vonage Voice Application created with public/private key authentication
+  (private key stored locally, excluded from git via `.gitignore`)
+
+### Webhook endpoints (in `main.py`)
+- `GET /vonage/answer` — called by Vonage the instant a call connects.
+  **Must be GET, not POST** — Vonage sends call details as query parameters,
+  not a JSON body. Returns an NCCO: speaks a greeting, then listens for
+  caller speech via the "input" action.
+- `POST /vonage/event` — called on every call status change (ringing,
+  answered, completed, etc.). Currently just logs; no response body needed.
+- `POST /vonage/input` — called with the caller's transcribed speech after
+  they stop talking. Currently returns a placeholder echo response —
+  **not yet wired to the actual receptionist brain** (`generate_receptionist_reply`).
+- `POST /vonage/fallback` — safety net if `/answer` fails; returns a generic
+  "technical difficulties" message.
+
+### Triggering outbound test calls
+`test_call.py` (project root) authenticates via a JWT signed with the
+application's private key, then calls Vonage's `/v1/calls` API directly.
+Used for manual testing — not part of the production call flow (real
+inbound calls will originate from a caller dialing a real number, once
+purchased).
+
+### Known trial-account limitations (Vonage)
+- Cannot purchase an inbound phone number without upgrading to a paid account
+- Cannot place outbound voice calls to arbitrary numbers — **but** verifying
+  a number under Vonage's "Test Numbers" feature (Account → Test Numbers)
+  does enable real outbound voice calls to that number, confirmed via direct
+  testing. This is more permissive than Vonage's own documentation implies
+  (which describes test numbers as SMS-only).
+
+### Known gap
+`/vonage/input` does not yet call the receptionist brain — it only echoes
+the caller's transcribed speech back to them. Wiring this to
+`generate_receptionist_reply()` (including conversation state, business
+hours, FAQ matching, emergency detection, etc.) is the next step.

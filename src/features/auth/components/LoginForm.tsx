@@ -27,6 +27,7 @@ export default function LoginForm() {
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
 
   const {
     register,
@@ -43,17 +44,12 @@ export default function LoginForm() {
     try {
       const response = await login(data);
 
-      // Save JWT token
-      localStorage.setItem(
-        "access_token",
-        response.access_token
-      );
+      // Remember me checked -> persist across browser restarts (localStorage)
+      // Unchecked -> clears when the tab closes (sessionStorage)
+      const storage = rememberMe ? localStorage : sessionStorage;
 
-      // Save logged-in user
-      localStorage.setItem(
-        "user",
-        JSON.stringify(response.user)
-      );
+      storage.setItem("access_token", response.access_token);
+      storage.setItem("user", JSON.stringify(response.user));
 
       console.log("Login Successful:", response);
 
@@ -355,6 +351,60 @@ export default function LoginForm() {
                     {errors.password.message}
                   </p>
                 )}
+
+              </div>
+
+              {/* =================================================
+                  REMEMBER ME
+              ================================================= */}
+
+              <div className="flex items-center justify-between">
+
+                <label
+                  htmlFor="remember-me"
+                  className="
+                    flex
+                    cursor-pointer
+                    items-center
+                    gap-2.5
+                    text-sm
+                    text-white/60
+                  "
+                >
+                  <input
+                    id="remember-me"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="
+                      h-4
+                      w-4
+                      shrink-0
+                      cursor-pointer
+                      rounded
+                      border
+                      border-white/20
+                      bg-black/30
+                      accent-orange-500
+                      outline-none
+                      focus-visible:ring-2
+                      focus-visible:ring-orange-500/30
+                    "
+                  />
+                  Remember me
+                </label>
+
+                <a
+                  href="/forgot-password"
+                  className="
+                    text-sm
+                    text-orange-400
+                    transition-colors
+                    hover:text-orange-300
+                  "
+                >
+                  Forgot password?
+                </a>
 
               </div>
 

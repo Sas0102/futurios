@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -711,13 +712,40 @@ export default function SignupForm() {
         </form>
 
         {/* =================================================
+            ALREADY HAVE AN ACCOUNT
+        ================================================= */}
+
+        <motion.p
+          variants={fieldVariants}
+          className="
+            mt-6
+            text-center
+            text-sm
+            text-gray-400
+          "
+        >
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="
+              font-medium
+              text-orange-400
+              transition-colors
+              hover:text-orange-300
+            "
+          >
+            Log in
+          </Link>
+        </motion.p>
+
+        {/* =================================================
             FOOTER
         ================================================= */}
 
         <motion.p
           variants={fieldVariants}
           className="
-            mt-7
+            mt-5
             text-center
             text-xs
             text-gray-600

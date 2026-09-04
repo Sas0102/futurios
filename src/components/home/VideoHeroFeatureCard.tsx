@@ -13,6 +13,7 @@ type Feature = {
   title: string;
   description: string;
   widget: React.ReactNode;
+  image: string;
 };
 
 const FEATURES: Feature[] = [
@@ -21,6 +22,9 @@ const FEATURES: Feature[] = [
     title: "Call Routing",
     description:
       "Your AI agent decides in real time — transfer, book, or resolve — so customers never sit in a queue.",
+
+    // IMAGE IS DIRECTLY INSIDE PUBLIC
+    image: "/futurios1.jpg",
 
     widget: (
       <StackedOptionsWidget
@@ -44,6 +48,9 @@ const FEATURES: Feature[] = [
     description:
       "See sentiment, response time, and missed-call patterns the moment they happen — not in tomorrow's report.",
 
+    // IMAGE IS DIRECTLY INSIDE PUBLIC
+    image: "/futurios2.jpg",
+
     widget: (
       <div className="rounded-xl border border-white/[0.08] bg-white/[0.04] p-4">
         <p className="text-[10px] text-gray-400">
@@ -63,6 +70,9 @@ const FEATURES: Feature[] = [
     description:
       "63% of missed calls happen after 6PM. Your agent doesn't clock out — it's always on shift.",
 
+    // IMAGE IS DIRECTLY INSIDE PUBLIC
+    image: "/futurios3.jpg",
+
     widget: (
       <div className="rounded-xl border border-white/[0.08] bg-white/[0.04] p-4">
         <p className="text-[10px] text-gray-400">
@@ -81,6 +91,9 @@ const FEATURES: Feature[] = [
     title: "Business Intelligence",
     description:
       "Every call becomes a data point — spot trends across conversations to make better decisions, faster.",
+
+    // IMAGE IS DIRECTLY INSIDE PUBLIC
+    image: "/futurios4.jpg",
 
     widget: (
       <div className="rounded-xl border border-white/[0.08] bg-white/[0.04] p-4">
@@ -103,7 +116,6 @@ const FEATURES: Feature[] = [
 export default function VideoHeroFeatureCard() {
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // Reference to this section
   const sectionRef = useRef<HTMLElement>(null);
 
   // Prevent multiple feature changes from one fast scroll
@@ -121,8 +133,7 @@ export default function VideoHeroFeatureCard() {
     const handleWheel = (event: WheelEvent) => {
       const now = Date.now();
 
-      // Prevent scrolling from changing multiple
-      // features too quickly
+      // Prevent multiple changes from one fast scroll
       if (now - lastScrollTime.current < 650) {
         return;
       }
@@ -132,10 +143,7 @@ export default function VideoHeroFeatureCard() {
         return;
       }
 
-      // -------------------------------------------------
-      // Check whether the Video Hero is currently visible
-      // -------------------------------------------------
-
+      // Check if this section is visible
       const rect = section.getBoundingClientRect();
 
       const sectionIsVisible =
@@ -148,9 +156,9 @@ export default function VideoHeroFeatureCard() {
 
       lastScrollTime.current = now;
 
-      // -------------------------------------------------
-      // Scroll DOWN → next feature
-      // -------------------------------------------------
+      // =================================================
+      // SCROLL DOWN → NEXT FEATURE
+      // =================================================
 
       if (event.deltaY > 0) {
         setActiveIndex((currentIndex) => {
@@ -161,9 +169,9 @@ export default function VideoHeroFeatureCard() {
         });
       }
 
-      // -------------------------------------------------
-      // Scroll UP → previous feature
-      // -------------------------------------------------
+      // =================================================
+      // SCROLL UP → PREVIOUS FEATURE
+      // =================================================
 
       else {
         setActiveIndex((currentIndex) => {
@@ -182,7 +190,7 @@ export default function VideoHeroFeatureCard() {
   }, []);
 
   // =====================================================
-  // RESET TO FEATURE 01 WHEN ENTERING THE SECTION
+  // RESET TO FEATURE 01 WHEN ENTERING SECTION
   // =====================================================
 
   useEffect(() => {
@@ -230,23 +238,46 @@ export default function VideoHeroFeatureCard() {
       "
     >
       {/* =================================================
-          BACKGROUND VIDEO
+          BACKGROUND IMAGE
       ================================================= */}
 
-      <video
-        className="
-          absolute
-          inset-0
-          h-full
-          w-full
-          object-cover
-        "
-        src="/videos/hero-background.mp4"
-        autoPlay
-        loop
-        muted
-        playsInline
-      />
+      <AnimatePresence mode="sync">
+        <motion.img
+          key={active.image}
+          src={active.image}
+          alt=""
+          className="
+            absolute
+            inset-0
+            z-0
+            h-full
+            w-full
+            object-cover
+          "
+          initial={{
+            opacity: 0,
+            scale: 1.06,
+          }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+          }}
+          exit={{
+            opacity: 0,
+            scale: 1.02,
+          }}
+          transition={{
+            opacity: {
+              duration: 0.6,
+              ease: "easeInOut",
+            },
+            scale: {
+              duration: 1.2,
+              ease: "easeOut",
+            },
+          }}
+        />
+      </AnimatePresence>
 
       {/* =================================================
           DARK OVERLAY
@@ -254,9 +285,28 @@ export default function VideoHeroFeatureCard() {
 
       <div
         className="
+          pointer-events-none
           absolute
           inset-0
+          z-10
           bg-black/30
+        "
+      />
+
+      {/* =================================================
+          LEFT GRADIENT
+      ================================================= */}
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          inset-0
+          z-10
+          bg-gradient-to-r
+          from-black/55
+          via-black/20
+          to-transparent
         "
       />
 
@@ -269,6 +319,7 @@ export default function VideoHeroFeatureCard() {
           absolute
           left-6
           top-24
+          z-20
           w-[420px]
           max-w-[90vw]
           rounded-2xl
@@ -303,9 +354,7 @@ export default function VideoHeroFeatureCard() {
               ease: "easeOut",
             }}
           >
-            {/* =================================================
-                FEATURE NUMBER
-            ================================================= */}
+            {/* FEATURE NUMBER */}
 
             <p
               className="
@@ -317,9 +366,7 @@ export default function VideoHeroFeatureCard() {
               {active.number}
             </p>
 
-            {/* =================================================
-                FEATURE TITLE
-            ================================================= */}
+            {/* FEATURE TITLE */}
 
             <h3
               className="
@@ -332,9 +379,7 @@ export default function VideoHeroFeatureCard() {
               {active.title}
             </h3>
 
-            {/* =================================================
-                FEATURE DESCRIPTION
-            ================================================= */}
+            {/* FEATURE DESCRIPTION */}
 
             <p
               className="
@@ -347,9 +392,7 @@ export default function VideoHeroFeatureCard() {
               {active.description}
             </p>
 
-            {/* =================================================
-                LEARN MORE
-            ================================================= */}
+            {/* LEARN MORE */}
 
             <button
               type="button"
@@ -366,9 +409,7 @@ export default function VideoHeroFeatureCard() {
               Learn more
             </button>
 
-            {/* =================================================
-                WIDGET
-            ================================================= */}
+            {/* WIDGET */}
 
             <div className="mt-6">
               {active.widget}

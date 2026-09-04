@@ -44,7 +44,10 @@ export default function LoginForm() {
       const response = await login(data);
 
       // Save JWT token
-      localStorage.setItem("access_token", response.access_token);
+      localStorage.setItem(
+        "access_token",
+        response.access_token
+      );
 
       // Save logged-in user
       localStorage.setItem(
@@ -54,15 +57,17 @@ export default function LoginForm() {
 
       console.log("Login Successful:", response);
 
-      // Redirect to onboarding
+      // Redirect after successful login
       router.push("/onboarding");
     } catch (error: any) {
-      console.error(error);
+      console.error("Login Error:", error);
 
       if (error.response?.data?.detail) {
         setErrorMessage(error.response.data.detail);
       } else {
-        setErrorMessage("Unable to login. Please try again.");
+        setErrorMessage(
+          "Unable to login. Please try again."
+        );
       }
     } finally {
       setLoading(false);
@@ -70,60 +75,384 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md rounded-lg border bg-white p-6">
-      <h1 className="mb-6 text-2xl font-bold">
-        Login
-      </h1>
+    <main className="relative min-h-screen w-full overflow-hidden bg-black text-white">
 
-      {errorMessage && (
-        <p className="mb-4 text-sm text-red-500">
-          {errorMessage}
-        </p>
-      )}
+      {/* =====================================================
+          BACKGROUND GRID
+      ===================================================== */}
 
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="space-y-4"
+      <div
+        className="
+          pointer-events-none
+          absolute
+          inset-0
+          opacity-[0.035]
+          [background-image:linear-gradient(rgba(255,255,255,1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,1)_1px,transparent_1px)]
+          [background-size:60px_60px]
+        "
+      />
+
+      {/* =====================================================
+          MAIN ORANGE GLOW
+      ===================================================== */}
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          left-1/2
+          top-1/2
+          h-[500px]
+          w-[500px]
+          -translate-x-1/2
+          -translate-y-1/2
+          rounded-full
+          bg-orange-500/[0.10]
+          blur-[150px]
+        "
+      />
+
+      {/* =====================================================
+          TOP ORANGE GLOW
+      ===================================================== */}
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          left-1/2
+          top-0
+          h-[250px]
+          w-[600px]
+          -translate-x-1/2
+          rounded-full
+          bg-orange-500/[0.06]
+          blur-[100px]
+        "
+      />
+
+      {/* =====================================================
+          CONTENT
+      ===================================================== */}
+
+      <div
+        className="
+          relative
+          z-10
+          flex
+          min-h-screen
+          items-center
+          justify-center
+          px-6
+          py-12
+        "
       >
-        <div>
-          <Label>Email</Label>
+        <div className="w-full max-w-md">
 
-          <Input
-            placeholder="john@example.com"
-            {...register("email")}
-          />
+          {/* =================================================
+              HEADING
+          ================================================= */}
 
-          {errors.email && (
-            <p className="text-sm text-red-500">
-              {errors.email.message}
+          <div className="mb-8 text-center">
+
+            <h1
+              className="
+                text-4xl
+                font-semibold
+                tracking-[-0.04em]
+                text-white
+              "
+            >
+              Welcome back.
+            </h1>
+
+            <p
+              className="
+                mt-3
+                text-sm
+                leading-relaxed
+                text-white/50
+              "
+            >
+              Sign in to your AI voice agent platform.
             </p>
-          )}
+
+          </div>
+
+          {/* =================================================
+              LOGIN CARD
+          ================================================= */}
+
+          <div
+            className="
+              relative
+              overflow-hidden
+              rounded-3xl
+              border
+              border-white/[0.10]
+              bg-white/[0.045]
+              p-7
+              shadow-[0_25px_80px_rgba(0,0,0,0.45)]
+              backdrop-blur-2xl
+              sm:p-8
+            "
+          >
+
+            {/* Card top orange line */}
+
+            <div
+              className="
+                pointer-events-none
+                absolute
+                left-1/2
+                top-0
+                h-px
+                w-2/3
+                -translate-x-1/2
+                bg-gradient-to-r
+                from-transparent
+                via-orange-500/70
+                to-transparent
+              "
+            />
+
+            {/* =================================================
+                FORM
+            ================================================= */}
+
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="space-y-6"
+            >
+
+              {/* =================================================
+                  ERROR MESSAGE
+              ================================================= */}
+
+              {errorMessage && (
+                <div
+                  className="
+                    rounded-xl
+                    border
+                    border-red-500/20
+                    bg-red-500/[0.08]
+                    px-4
+                    py-3
+                  "
+                >
+                  <p className="text-sm text-red-300">
+                    {errorMessage}
+                  </p>
+                </div>
+              )}
+
+              {/* =================================================
+                  EMAIL
+              ================================================= */}
+
+              <div className="space-y-2">
+
+                <Label
+                  htmlFor="email"
+                  className="
+                    text-sm
+                    font-medium
+                    text-white
+                  "
+                >
+                  Email
+                </Label>
+
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="john@example.com"
+                  autoComplete="email"
+                  {...register("email")}
+                  className="
+                    h-12
+                    rounded-xl
+                    border
+                    border-white/[0.12]
+                    bg-black/30
+                    px-4
+                    text-white
+                    placeholder:text-white/25
+                    outline-none
+                    transition-all
+
+                    focus:border-orange-500/70
+                    focus:ring-2
+                    focus:ring-orange-500/20
+
+                    /* Chrome / Edge autofill fix */
+                    [&:-webkit-autofill]:!bg-transparent
+                    [&:-webkit-autofill]:!text-white
+                    [&:-webkit-autofill]:[-webkit-text-fill-color:white]
+                    [&:-webkit-autofill]:[transition:background-color_9999s_ease-in-out_0s]
+                    [&:-webkit-autofill]:[box-shadow:0_0_0px_1000px_rgba(0,0,0,0.30)_inset]
+                  "
+                />
+
+                {errors.email && (
+                  <p className="text-xs text-red-400">
+                    {errors.email.message}
+                  </p>
+                )}
+
+              </div>
+
+              {/* =================================================
+                  PASSWORD
+              ================================================= */}
+
+              <div className="space-y-2">
+
+                <Label
+                  htmlFor="password"
+                  className="
+                    text-sm
+                    font-medium
+                    text-white
+                  "
+                >
+                  Password
+                </Label>
+
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  {...register("password")}
+                  className="
+                    h-12
+                    rounded-xl
+                    border
+                    border-white/[0.12]
+                    bg-black/30
+                    px-4
+                    text-white
+                    placeholder:text-white/25
+                    outline-none
+                    transition-all
+
+                    focus:border-orange-500/70
+                    focus:ring-2
+                    focus:ring-orange-500/20
+
+                    /* Chrome / Edge autofill fix */
+                    [&:-webkit-autofill]:!bg-transparent
+                    [&:-webkit-autofill]:!text-white
+                    [&:-webkit-autofill]:[-webkit-text-fill-color:white]
+                    [&:-webkit-autofill]:[transition:background-color_9999s_ease-in-out_0s]
+                    [&:-webkit-autofill]:[box-shadow:0_0_0px_1000px_rgba(0,0,0,0.30)_inset]
+                  "
+                />
+
+                {errors.password && (
+                  <p className="text-xs text-red-400">
+                    {errors.password.message}
+                  </p>
+                )}
+
+              </div>
+
+              {/* =================================================
+                  LOGIN BUTTON
+              ================================================= */}
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="
+                  h-12
+                  w-full
+                  rounded-xl
+                  border-0
+                  bg-orange-500
+                  text-sm
+                  font-semibold
+                  text-white
+                  shadow-[0_8px_30px_rgba(249,115,22,0.20)]
+                  transition-all
+                  duration-300
+                  hover:bg-orange-400
+                  hover:shadow-[0_8px_35px_rgba(249,115,22,0.30)]
+                  disabled:cursor-not-allowed
+                  disabled:opacity-60
+                "
+              >
+
+                {loading ? (
+                  <span className="flex items-center gap-2">
+
+                    <span
+                      className="
+                        h-4
+                        w-4
+                        animate-spin
+                        rounded-full
+                        border-2
+                        border-white/30
+                        border-t-white
+                      "
+                    />
+
+                    Logging in...
+
+                  </span>
+                ) : (
+                  "Log in"
+                )}
+
+              </Button>
+
+            </form>
+
+            {/* =================================================
+                BOTTOM TEXT
+            ================================================= */}
+
+            <div
+              className="
+                mt-7
+                border-t
+                border-white/[0.08]
+                pt-6
+              "
+            >
+              <p
+                className="
+                  text-center
+                  text-xs
+                  text-white/35
+                "
+              >
+                Secure access to your Futurios workspace
+              </p>
+            </div>
+
+          </div>
+
+          {/* =================================================
+              FOOTER
+          ================================================= */}
+
+          <p
+            className="
+              mt-7
+              text-center
+              text-xs
+              text-white/25
+            "
+          >
+            AI-powered voice conversations. Built for business.
+          </p>
+
         </div>
+      </div>
 
-        <div>
-          <Label>Password</Label>
-
-          <Input
-            type="password"
-            placeholder="********"
-            {...register("password")}
-          />
-
-          {errors.password && (
-            <p className="text-sm text-red-500">
-              {errors.password.message}
-            </p>
-          )}
-        </div>
-
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={loading}
-        >
-          {loading ? "Logging in..." : "Login"}
-        </Button>
-      </form>
-    </div>
+    </main>
   );
 }

@@ -2,7 +2,8 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/home/Hero";
 import DashboardShowcase from "@/components/home/DashBoardShowcase";
 import VoiceAnalyticsStory from "@/components/home/VoiceAnalyticsStory";
-import MorningBriefingStory from "@/components/home/MorningBriefingStory";
+import VideoHeroFeatureCard from "@/components/home/VideoHeroFeatureCard";
+
 
 
 export default function Home() {
@@ -12,7 +13,7 @@ export default function Home() {
         min-h-screen
         bg-black
         text-white
-        overflow-x-hidden
+        overflow-x-clip
       "
     >
 
@@ -28,12 +29,16 @@ export default function Home() {
       <DashboardShowcase />
 
 
-      {/* AI Analytics Story */}
+
+      {/* AI Analytics Story  */}          
       <VoiceAnalyticsStory />
+      
 
 
-      {/* Morning Briefing Scroll Story */}
-      <MorningBriefingStory />
+      {/* Video Hero Feature Card */}
+      <VideoHeroFeatureCard  />
+
+
 
 
     </main>

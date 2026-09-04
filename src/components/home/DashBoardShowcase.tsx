@@ -73,7 +73,7 @@ export default function DashBoardShowcase() {
   ];
 
   return (
-    <section ref={containerRef} className="relative mt-10 pb-40 px-6">
+    <section ref={containerRef} className="relative mt-32 pb-10 px-6">
       <motion.div
         style={{
           scale,

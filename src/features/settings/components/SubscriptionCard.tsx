@@ -25,7 +25,7 @@ Current Plan
 <p className="mt-3">
 
 {
-subscription?.plan?.name
+subscription?.plan?.display_name
 }
 
 </p>

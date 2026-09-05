@@ -9,8 +9,7 @@ import { useRouter } from "next/navigation";
 type Organisation = {
   id: number;
   name: string;
-  created_at: string;
-  [key: string]: any;
+  slug: string;
 };
 
 export default function SuperAdminOrgsPage() {
@@ -61,7 +60,7 @@ export default function SuperAdminOrgsPage() {
             <tr>
               <th className="px-5 py-3">ID</th>
               <th className="px-5 py-3">Name</th>
-              <th className="px-5 py-3">Created</th>
+              <th className="px-5 py-3">Slug</th>
             </tr>
           </thead>
           <tbody>
@@ -76,9 +75,7 @@ export default function SuperAdminOrgsPage() {
                     {org.name}
                   </Link>
                 </td>
-                <td className="px-5 py-3 text-gray-400">
-                  {new Date(org.created_at).toLocaleDateString()}
-                </td>
+                <td className="px-5 py-3 text-gray-400">{org.slug}</td>
               </tr>
             ))}
           </tbody>

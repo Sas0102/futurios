@@ -27,6 +27,7 @@ type PlanLimits = {
 type Subscription = {
   plan: {
     name: string;
+    display_name: string;
     price_per_month: number | null;
     limits: PlanLimits;
   };
@@ -106,12 +107,12 @@ export default function OrgDetailPage() {
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
           <div className="flex items-center justify-between mb-4">
             <p className="text-xl font-bold text-orange-400 capitalize">
-              {subscription?.plan?.name ?? "—"}
+              {subscription?.plan?.display_name ?? "-"}
             </p>
             <p className="text-sm text-gray-400">
               {subscription?.plan?.price_per_month == null
                 ? "Contact us"
-                : `$${subscription.plan.price_per_month}/mo`}
+                : `Rs. ${subscription.plan.price_per_month.toLocaleString("en-IN")}/mo`}
             </p>
           </div>
 
@@ -134,9 +135,8 @@ export default function OrgDetailPage() {
       <div>
         <h2 className="text-lg font-semibold text-white mb-4">Members</h2>
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-sm text-gray-500">
-          No endpoint for listing members yet — only creation (
-          <code className="text-gray-400">POST /organisations/&#123;id&#125;/members</code>) is
-          confirmed. Ask your friend if there's a matching GET.
+          Team member management is available in organisation settings for
+          organisation admins.
         </div>
       </div>
     </div>

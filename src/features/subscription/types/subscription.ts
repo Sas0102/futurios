@@ -10,13 +10,18 @@ export interface PlanLimits {
 
 
 export interface Plan {
+  id: number;
+  name: "base" | "growth" | "pro" | "custom" | string;
+  display_name: string;
+  price_per_month: number | null;
+  limits: PlanLimits;
+  is_active: boolean;
+}
 
-  id:number;
-
-  name:string;
-
-  price_per_month:number | null;
-
-  limits:PlanLimits;
-
+export interface Subscription {
+  id: number;
+  organisation_id: number;
+  plan: Plan;
+  started_at: string;
+  custom_limits: Record<string, unknown> | null;
 }

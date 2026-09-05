@@ -12,6 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 import { login } from "../services/authService";
+import { getMyOrganisations } from "@/features/organisations/services/organisationService";
+import { storeCurrentOrganisationId } from "@/features/organisations/hooks/useCurrentOrganisation";
+import { getApiErrorMessage } from "@/lib/apiError";
+import api from "@/lib/api";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -46,25 +50,31 @@ export default function LoginForm() {
 
       // Remember me checked -> persist across browser restarts (localStorage)
       // Unchecked -> clears when the tab closes (sessionStorage)
-      const storage = rememberMe ? localStorage : sessionStorage;
+      const storage = rememberMe ? window.localStorage : window.sessionStorage;
+      const staleStorage = rememberMe
+        ? window.sessionStorage
+        : window.localStorage;
 
       storage.setItem("access_token", response.access_token);
       storage.setItem("user", JSON.stringify(response.user));
+      staleStorage.removeItem("access_token");
+      staleStorage.removeItem("user");
+      staleStorage.removeItem("current_organisation_id");
 
-      console.log("Login Successful:", response);
+      api.defaults.headers.common.Authorization = `Bearer ${response.access_token}`;
 
-      // Redirect after successful login
-      router.push("/onboarding");
-    } catch (error: any) {
-      console.error("Login Error:", error);
+      const organisations = await getMyOrganisations();
 
-      if (error.response?.data?.detail) {
-        setErrorMessage(error.response.data.detail);
+      if (organisations[0]) {
+        storeCurrentOrganisationId(organisations[0].id);
+        router.push("/dashboard");
       } else {
-        setErrorMessage(
-          "Unable to login. Please try again."
-        );
+        router.push("/onboarding");
       }
+    } catch (error: unknown) {
+      setErrorMessage(
+        getApiErrorMessage(error, "Unable to login. Please try again.")
+      );
     } finally {
       setLoading(false);
     }

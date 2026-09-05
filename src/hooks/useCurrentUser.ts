@@ -5,10 +5,9 @@ import api from "@/lib/api";
 
 type User = {
   id: number;
-  name: string;
+  full_name: string;
   email: string;
   is_super_admin: boolean;
-  [key: string]: any;
 };
 
 export function useCurrentUser() {
@@ -25,7 +24,7 @@ export function useCurrentUser() {
     }
 
     api
-      .get("/auth/me") // TODO: confirm real path with backend
+      .get("/auth/me")
       .then((res) => setUser(res.data))
       .catch(() => setUser(null))
       .finally(() => setIsLoading(false));

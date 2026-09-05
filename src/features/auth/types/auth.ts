@@ -10,7 +10,7 @@ export interface SignupResponse {
   id: number;
   email: string;
   full_name: string;
-  created_at: string;
+  is_super_admin: boolean;
 }
 
 // ---------- Login ----------

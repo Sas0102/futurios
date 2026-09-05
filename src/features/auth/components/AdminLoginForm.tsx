@@ -9,6 +9,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ShieldAlert } from "lucide-react";
 
 import { login } from "../services/authService";
+import { storeAuthSession } from "../utils/authStorage";
+import { getApiErrorMessage } from "@/lib/apiError";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -44,16 +46,13 @@ export default function AdminLoginForm() {
         return;
       }
 
-      localStorage.setItem("access_token", response.access_token);
-      localStorage.setItem("user", JSON.stringify(response.user));
+      storeAuthSession(response);
 
       router.push("/admin/organisations");
     } catch (error: any) {
-      if (error.response?.data?.detail) {
-        setErrorMessage(error.response.data.detail);
-      } else {
-        setErrorMessage("Unable to login. Please try again.");
-      }
+      setErrorMessage(
+        getApiErrorMessage(error, "Unable to login. Please try again.")
+      );
     } finally {
       setLoading(false);
     }

@@ -1050,3 +1050,7 @@ async def vonage_language_select(request: Request, db: Session = Depends(get_db)
         },
     ]
     return ncco
+
+@app.get("/auth/me", response_model=UserOut)
+def get_current_user_info(current_user: User = Depends(get_current_user)):
+    return current_user

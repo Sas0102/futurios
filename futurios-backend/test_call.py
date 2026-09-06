@@ -26,6 +26,5 @@ response = requests.post(
         "event_url": ["https://unadorned-expediter-gift.ngrok-free.dev/vonage/event"],
     },
 )
-
 print(response.status_code)
 print(response.json())

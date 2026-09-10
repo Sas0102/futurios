@@ -1,71 +1,18 @@
 import api from "@/lib/api";
+import { SettingsData, UserProfile } from "../types/settings";
 
-import {
-  SettingsData
-} from "../types/settings";
-
-
-
-// later this will connect backend
-
-export const getSettings = async():Promise<SettingsData> => {
-
-
-const response = await api.get(
-"/me/settings"
-);
-
-
-return response.data;
-
-
+export const getSettings = async (organisationId: number): Promise<SettingsData> => {
+  const [userResponse, organisationResponse] = await Promise.all([
+    api.get<UserProfile>("/auth/me"),
+    api.get(`/organisations/${organisationId}`),
+  ]);
+  return { user: userResponse.data, organisation: organisationResponse.data };
 };
 
-
-
-
-
-export const updateProfile = async(
-data:{
-full_name:string;
-email:string;
-}
-)=>{
-
-
-const response = await api.put(
-"/me/profile",
-data
-);
-
-
-return response.data;
-
-
-};
-
-
-
-
-
-export const updateOrganisation = async(
-organisationId:number,
-data:{
-name:string;
-}
-)=>{
-
-
-const response = await api.put(
-
-`/organisations/${organisationId}`,
-
-data
-
-);
-
-
-return response.data;
-
-
+export const updateProfile = async (data: {
+  full_name: string | null;
+  email: string;
+}): Promise<UserProfile> => {
+  const response = await api.patch<UserProfile>("/auth/me", data);
+  return response.data;
 };

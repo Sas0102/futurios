@@ -1,17 +1,19 @@
 import AgentEditForm from "@/features/agents/components/AgentEditForm";
 
 
-export default function EditAgentPage({
+export default async function EditAgentPage({
 
 params,
 
 }: {
 
-params:{
+params: Promise<{
 id:string;
-}
+}>
 
 }) {
+
+const { id } = await params;
 
 
 return (
@@ -33,7 +35,7 @@ Edit Voice Agent
 
 <AgentEditForm
 
-agentId={Number(params.id)}
+agentId={Number(id)}
 
 />
 

@@ -9,7 +9,14 @@ export interface SignupRequest {
 export interface SignupResponse {
   id: number;
   email: string;
-  full_name: string;
+  full_name: string | null;
+  is_super_admin: boolean;
+}
+
+export interface AuthUser {
+  id: number;
+  email: string;
+  full_name: string | null;
   is_super_admin: boolean;
 }
 
@@ -23,10 +30,5 @@ export interface LoginRequest {
 export interface LoginResponse {
   access_token: string;
   token_type: string;
-  user: {
-    id: number;
-    email: string;
-    full_name: string;
-    is_super_admin: boolean;
-  };
+  user: AuthUser;
 }

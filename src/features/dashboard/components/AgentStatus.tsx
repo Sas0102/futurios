@@ -1,7 +1,12 @@
-import { agents } from "../data/dummyData";
+import { Agent } from "@/features/agents/types/agent";
+
+interface AgentStatusProps {
+  agents: Agent[];
+  callCountsByAgent: Record<number, number>;
+}
 
 
-export default function AgentStatus(){
+export default function AgentStatus({ agents, callCountsByAgent }: AgentStatusProps){
 
 
   return (
@@ -91,7 +96,7 @@ export default function AgentStatus(){
                   "
                 >
 
-                  {agent.calls} calls handled
+                  {callCountsByAgent[agent.id] ?? 0} calls handled
 
                 </p>
 
@@ -107,7 +112,7 @@ export default function AgentStatus(){
 
                 className={
 
-                  agent.status === "Active"
+                  agent.status === "active"
 
                   ?
 
@@ -150,6 +155,8 @@ export default function AgentStatus(){
           ))
 
         }
+
+        {agents.length === 0 && <p className="text-sm text-gray-500">No voice agents yet.</p>}
 
 
       </div>

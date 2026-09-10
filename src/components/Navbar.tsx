@@ -3,19 +3,13 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import BookDemoModal from "@/components/BookDemoModal";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 const navLinks = [
-  {
-    label: "Solutions",
-    href: "/plans",
-  },
-  {
-    label: "Company",
-    href: "/company",
-  },
+  { label: "Solutions", href: "/plans" },
+  { label: "Company", href: "/company" },
 ];
 
 // =====================================================
@@ -54,6 +48,7 @@ const productCards = [
 export default function Navbar() {
   const [demoOpen, setDemoOpen] = useState(false);
   const [productsOpen, setProductsOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { isSuperAdmin } = useCurrentUser();
 
   const menuRef = useRef<HTMLDivElement>(null);
@@ -74,6 +69,14 @@ export default function Navbar() {
       document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Lock body scroll while the mobile drawer is open
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
   return (
     <>
       <nav
@@ -83,32 +86,29 @@ export default function Navbar() {
           flex
           items-center
           justify-between
-          px-10
-          py-6
+          px-4
+          py-4
+          sm:px-6
+          md:px-10
+          md:py-6
           border-b
           border-white/10
         "
       >
         {/* Logo */}
-        <Link href="/" className="text-2xl font-bold text-white">
+        <Link href="/" className="text-xl sm:text-2xl font-bold text-white">
           FUTUR
           <span className="text-orange-500">i</span>
           OS AI
         </Link>
 
-        {/* Navigation */}
+        {/* Desktop navigation */}
 
         <div className="hidden md:flex items-center gap-8 text-gray-300">
           {/* Products — dropdown trigger */}
           <button
             onClick={() => setProductsOpen((prev) => !prev)}
-            className="
-              flex
-              items-center
-              gap-1
-              hover:text-white
-              transition
-            "
+            className="flex items-center gap-1 hover:text-white transition"
           >
             Products
             <ChevronDown
@@ -139,47 +139,70 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Buttons */}
+        {/* Desktop buttons */}
 
-        <div className="flex gap-4">
-          {/* Login */}
-
+        <div className="hidden sm:flex gap-3 md:gap-4">
           <Link
             href="/login"
             className="
-              px-5
+              px-4
               py-2
+              md:px-5
               rounded-lg
               border
               border-white/20
               hover:border-orange-500
               transition
+              text-sm
+              md:text-base
             "
           >
             Login
           </Link>
 
-          {/* Book a Demo */}
-
           <button
             onClick={() => setDemoOpen(true)}
             className="
-              px-5
+              px-4
               py-2
+              md:px-5
               rounded-lg
               bg-orange-500
               text-black
               font-semibold
               hover:bg-orange-400
               transition
+              text-sm
+              md:text-base
             "
           >
             Book a Demo
           </button>
         </div>
 
+        {/* Mobile hamburger trigger */}
+
+        <button
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open menu"
+          className="
+            flex
+            h-10
+            w-10
+            items-center
+            justify-center
+            rounded-lg
+            border
+            border-white/15
+            text-white
+            sm:hidden
+          "
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+
         {/* =================================================
-            PRODUCTS MEGA-MENU
+            PRODUCTS MEGA-MENU (desktop only)
         ================================================= */}
 
         <AnimatePresence>
@@ -196,6 +219,7 @@ export default function Navbar() {
                 top-full
                 z-50
                 mt-3
+                hidden
                 w-[min(94vw,980px)]
                 -translate-x-1/2
                 overflow-hidden
@@ -205,6 +229,7 @@ export default function Navbar() {
                 bg-[#0a0a0a]
                 p-8
                 shadow-[0_30px_100px_rgba(0,0,0,0.65)]
+                md:block
               "
             >
               {/* Top glow line, matches the card-top-light look elsewhere on the site */}
@@ -335,6 +360,127 @@ export default function Navbar() {
           )}
         </AnimatePresence>
       </nav>
+
+      {/* =====================================================
+          MOBILE DRAWER (nav links + buttons, below sm)
+      ===================================================== */}
+
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[60] sm:hidden"
+          >
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/60"
+              onClick={() => setMobileOpen(false)}
+            />
+
+            {/* Panel */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 32 }}
+              className="
+                absolute
+                right-0
+                top-0
+                h-full
+                w-[82%]
+                max-w-xs
+                overflow-y-auto
+                border-l
+                border-white/10
+                bg-[#0a0a0a]
+                p-6
+              "
+            >
+              <div className="flex items-center justify-between">
+                <Link
+                  href="/"
+                  onClick={() => setMobileOpen(false)}
+                  className="text-lg font-bold text-white"
+                >
+                  FUTUR<span className="text-orange-500">i</span>OS AI
+                </Link>
+
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  aria-label="Close menu"
+                  className="
+                    flex h-9 w-9 items-center justify-center rounded-lg
+                    border border-white/15 text-white
+                  "
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="mt-8 flex flex-col gap-1 text-base text-gray-300">
+                <Link
+                  href="/products"
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-lg px-3 py-3 hover:bg-white/5 hover:text-white"
+                >
+                  Products
+                </Link>
+
+                {navLinks.map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="rounded-lg px-3 py-3 hover:bg-white/5 hover:text-white"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+
+                {isSuperAdmin && (
+                  <Link
+                    href="/admin/organisations"
+                    onClick={() => setMobileOpen(false)}
+                    className="rounded-lg px-3 py-3 hover:bg-white/5 hover:text-white"
+                  >
+                    Admin
+                  </Link>
+                )}
+              </div>
+
+              <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-6">
+                <Link
+                  href="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="
+                    rounded-lg border border-white/20 px-5 py-3
+                    text-center text-white hover:border-orange-500
+                  "
+                >
+                  Login
+                </Link>
+
+                <button
+                  onClick={() => {
+                    setMobileOpen(false);
+                    setDemoOpen(true);
+                  }}
+                  className="
+                    rounded-lg bg-orange-500 px-5 py-3
+                    text-center font-semibold text-black hover:bg-orange-400
+                  "
+                >
+                  Book a Demo
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <BookDemoModal open={demoOpen} onClose={() => setDemoOpen(false)} />
     </>

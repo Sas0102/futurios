@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from config import settings
 from database import engine, get_db
 from models import User
-from schemas import UserCreate, UserOut, UserLogin, Token
+from schemas import UserCreate, UserOut, UserLogin, UserUpdate, Token
 from auth import hash_password, verify_password, create_access_token
 from models import User, Organisation, Membership
 from schemas import OrganisationCreate, OrganisationOut
@@ -61,7 +61,7 @@ app = FastAPI(title=settings.app_name)
 # Allow Saswati's frontend (running on port 3000) to call this API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1053,4 +1053,23 @@ async def vonage_language_select(request: Request, db: Session = Depends(get_db)
 
 @app.get("/auth/me", response_model=UserOut)
 def get_current_user_info(current_user: User = Depends(get_current_user)):
+    return current_user
+
+@app.patch("/auth/me", response_model=UserOut)
+def update_current_user_info(
+    user_data: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if user_data.email is not None and user_data.email != current_user.email:
+        existing_user = db.query(User).filter(User.email == user_data.email).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        current_user.email = user_data.email
+
+    if user_data.full_name is not None:
+        current_user.full_name = user_data.full_name
+
+    db.commit()
+    db.refresh(current_user)
     return current_user

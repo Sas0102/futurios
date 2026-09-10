@@ -1,18 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import api from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/apiError";
-
-type DemoRequest = {
-  id: number;
-  name: string;
-  email: string;
-  company_name: string | null;
-  phone_number: string | null;
-  message: string | null;
-  created_at: string;
-};
+import {
+  DemoRequest,
+  getDemoRequests,
+} from "@/features/admin/services/adminService";
 
 export default function DemoRequestsPage() {
   const [requests, setRequests] = useState<DemoRequest[]>([]);
@@ -25,8 +18,7 @@ export default function DemoRequestsPage() {
       setError("");
 
       try {
-        const response = await api.get<DemoRequest[]>("/admin/demo-requests");
-        setRequests(response.data);
+        setRequests(await getDemoRequests());
       } catch (err: unknown) {
         setError(getApiErrorMessage(err, "Unable to load demo requests."));
       } finally {

@@ -49,5 +49,29 @@ export interface CreateAgentRequest {
  */
 export type UpdateAgentRequest = Partial<CreateAgentRequest>;
 
+export interface VoiceSession {
+  id: number;
+  agent_id: number;
+  status: string;
+  transcript: string | null;
+  started_at: string;
+  ended_at: string | null;
+}
+
+export interface SimulateAgentRequest {
+  call_id: string;
+  message: string;
+}
+
+export interface SimulateAgentResponse {
+  response_text: string;
+  intent: string;
+  detected_language: string;
+  confidence: number;
+  transfer_required: boolean;
+  transfer_department: string | null;
+  end_call: boolean;
+}
+
 /** @deprecated use CreateAgentRequest / UpdateAgentRequest instead */
 export type AgentPayload = CreateAgentRequest;

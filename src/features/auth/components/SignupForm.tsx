@@ -36,17 +36,16 @@ type SignupFormData = z.infer<typeof signupSchema>;
 const containerVariants: Variants = {
   hidden: {
     opacity: 0,
-    y: 24,
+    y: 12,
   },
 
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.6,
+      duration: 0.25,
       ease: "easeOut",
-      when: "beforeChildren",
-      staggerChildren: 0.09,
+      staggerChildren: 0.035,
     },
   },
 };
@@ -54,14 +53,14 @@ const containerVariants: Variants = {
 const fieldVariants: Variants = {
   hidden: {
     opacity: 0,
-    y: 14,
+    y: 8,
   },
 
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.4,
+      duration: 0.2,
       ease: "easeOut",
     },
   },
@@ -321,8 +320,8 @@ export default function SignupForm() {
             opacity: 1,
           }}
           transition={{
-            delay: 0.4,
-            duration: 0.8,
+            delay: 0.1,
+            duration: 0.4,
             ease: "easeOut",
           }}
           className="

@@ -2,21 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import api from "@/lib/api";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useRouter } from "next/navigation";
-
-type Organisation = {
-  id: number;
-  name: string;
-  slug: string;
-};
+import {
+  AdminOrganisation,
+  getAdminOrganisations,
+} from "@/features/admin/services/adminService";
 
 export default function SuperAdminOrgsPage() {
   const { isLoading: userLoading, isSuperAdmin } = useCurrentUser();
   const router = useRouter();
 
-  const [orgs, setOrgs] = useState<Organisation[]>([]);
+  const [orgs, setOrgs] = useState<AdminOrganisation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -28,9 +25,8 @@ export default function SuperAdminOrgsPage() {
       return;
     }
 
-    api
-      .get("/admin/organisations")
-      .then((res) => setOrgs(res.data))
+    getAdminOrganisations()
+      .then(setOrgs)
       .catch((err) => {
         setError(
           err.response?.status === 403

@@ -31,7 +31,7 @@ type Subscription = {
     price_per_month: number | null;
     limits: PlanLimits;
   };
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 export default function OrgDetailPage() {

@@ -11,11 +11,15 @@ class UserCreate(BaseModel):
 class UserOut(BaseModel):
     id: int
     email: str
-    full_name: str
+    full_name: str | None
     is_super_admin: bool
 
     class Config:
         from_attributes = True
+
+class UserUpdate(BaseModel):
+    full_name: str | None = None
+    email: EmailStr | None = None
 
 class UserLogin(BaseModel):
     email: EmailStr

@@ -1,7 +1,12 @@
-import { recentCalls } from "../data/dummyData";
+import { CallSummary } from "@/features/calls/types/call";
+
+interface RecentCallsTableProps {
+  calls: CallSummary[];
+  agentNamesById: Record<number, string>;
+}
 
 
-export default function RecentCallsTable() {
+export default function RecentCallsTable({ calls, agentNamesById }: RecentCallsTableProps) {
 
 
   return (
@@ -89,7 +94,7 @@ export default function RecentCallsTable() {
 
 
           {
-            recentCalls.map((call)=>(
+            calls.map((call)=>(
 
 
               <tr
@@ -115,7 +120,7 @@ export default function RecentCallsTable() {
                   "
                 >
 
-                  {call.caller}
+                  —
 
                 </td>
 
@@ -129,7 +134,7 @@ export default function RecentCallsTable() {
                   "
                 >
 
-                  {call.agent}
+                  {agentNamesById[call.agent_id] ?? `Agent #${call.agent_id}`}
 
                 </td>
 
@@ -144,7 +149,7 @@ export default function RecentCallsTable() {
                   "
                 >
 
-                  {call.duration}
+                  —
 
                 </td>
 
@@ -160,7 +165,7 @@ export default function RecentCallsTable() {
 
                     className={
 
-                      call.status === "Completed"
+                      !call.transfer_required
 
                       ?
 
@@ -190,7 +195,7 @@ export default function RecentCallsTable() {
 
                   >
 
-                    {call.status}
+                  {call.final_intent.replaceAll("_", " ")}
 
                   </span>
 
@@ -208,7 +213,7 @@ export default function RecentCallsTable() {
                   "
                 >
 
-                  {call.date}
+                  {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" }).format(new Date(call.created_at))}
 
                 </td>
 
@@ -219,8 +224,12 @@ export default function RecentCallsTable() {
               </tr>
 
 
-            ))
+          ))
           }
+
+          {calls.length === 0 && (
+            <tr><td colSpan={5} className="py-4 text-sm text-gray-500">No call summaries yet.</td></tr>
+          )}
 
 
         </tbody>

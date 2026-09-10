@@ -15,7 +15,7 @@ import { login } from "../services/authService";
 import { getMyOrganisations } from "@/features/organisations/services/organisationService";
 import { storeCurrentOrganisationId } from "@/features/organisations/hooks/useCurrentOrganisation";
 import { getApiErrorMessage } from "@/lib/apiError";
-import api from "@/lib/api";
+import { storeAuthSession } from "../utils/authStorage";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -48,20 +48,7 @@ export default function LoginForm() {
     try {
       const response = await login(data);
 
-      // Remember me checked -> persist across browser restarts (localStorage)
-      // Unchecked -> clears when the tab closes (sessionStorage)
-      const storage = rememberMe ? window.localStorage : window.sessionStorage;
-      const staleStorage = rememberMe
-        ? window.sessionStorage
-        : window.localStorage;
-
-      storage.setItem("access_token", response.access_token);
-      storage.setItem("user", JSON.stringify(response.user));
-      staleStorage.removeItem("access_token");
-      staleStorage.removeItem("user");
-      staleStorage.removeItem("current_organisation_id");
-
-      api.defaults.headers.common.Authorization = `Bearer ${response.access_token}`;
+      storeAuthSession(response, rememberMe);
 
       const organisations = await getMyOrganisations();
 

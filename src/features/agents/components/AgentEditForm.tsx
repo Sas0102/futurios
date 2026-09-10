@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 import { useRouter } from "next/navigation";
+import { getApiErrorMessage } from "@/lib/apiError";
 
 
 type AgentStatus = "draft" | "active" | "inactive";
@@ -74,7 +75,7 @@ export default function AgentEditForm({
       } catch(error) {
 
 
-        console.log(error);
+        setMessage(getApiErrorMessage(error, "Unable to load this agent."));
 
 
       }
@@ -152,12 +153,7 @@ export default function AgentEditForm({
     } catch(error) {
 
 
-      console.log(error);
-
-
-      setMessage(
-        "Failed to update agent"
-      );
+      setMessage(getApiErrorMessage(error, "Failed to update agent"));
 
 
     }

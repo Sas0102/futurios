@@ -1,30 +1,12 @@
 "use client";
 
 import Link from "next/link";
-
-
-
-const agents = [
-
-  {
-    id: 1,
-    name: "Front Desk Assistant",
-    description: "Handles incoming customer calls",
-    status: "Active",
-  },
-
-  {
-    id: 2,
-    name: "Sales Agent",
-    description: "Handles sales conversations",
-    status: "Draft",
-  },
-
-];
+import { useAgents } from "@/features/agents/hooks/useAgents";
 
 
 
 export default function VoiceAgentsPage() {
+  const { agents, loading, error, remove } = useAgents();
 
 
   return (
@@ -114,6 +96,18 @@ export default function VoiceAgentsPage() {
 
       {/* Agent Cards */}
 
+      {error && (
+        <p className="mb-6 rounded-md bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </p>
+      )}
+
+      {loading && <p className="text-sm text-gray-500">Loading voice agents...</p>}
+
+      {!loading && !error && agents.length === 0 && (
+        <p className="text-sm text-gray-500">No voice agents yet.</p>
+      )}
+
 
       <div
 
@@ -185,7 +179,7 @@ export default function VoiceAgentsPage() {
 
                   className={
 
-                    agent.status === "Active"
+                    agent.status === "active"
 
                     ?
 
@@ -240,7 +234,7 @@ export default function VoiceAgentsPage() {
 
               >
 
-                {agent.description}
+                {agent.description || "No description available"}
 
               </p>
 
@@ -345,6 +339,31 @@ export default function VoiceAgentsPage() {
                   Edit
 
                 </Link>
+
+                <button
+
+                  type="button"
+
+                  onClick={() => remove(agent.id)}
+
+                  className="
+                    flex-1
+                    text-center
+                    bg-red-500
+                    text-white
+                    px-4
+                    py-2
+                    rounded-lg
+                    font-medium
+                    hover:bg-red-600
+                    transition
+                  "
+
+                >
+
+                  Delete
+
+                </button>
 
 
 

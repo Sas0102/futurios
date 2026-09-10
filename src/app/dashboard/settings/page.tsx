@@ -1,16 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import SubscriptionCard from "@/features/subscription/components/SubscriptionCard";
+import ApiKeyManager from "@/features/api-keys/components/ApiKeyManager";
+import { readStoredOrganisationId } from "@/features/organisations/hooks/useCurrentOrganisation";
+import { getSettings, updateProfile } from "@/features/settings/services/settingsServices";
+import { storeCurrentUser } from "@/features/auth/utils/authStorage";
+import { getApiErrorMessage } from "@/lib/apiError";
 
 
 export default function SettingsPage() {
+  const organisationId = readStoredOrganisationId();
 
 
-  const [fullName,setFullName] = useState("Saswati");
+  const [fullName,setFullName] = useState("");
 
-  const [email,setEmail] = useState("user@example.com");
+  const [email,setEmail] = useState("");
 
-  const [organisation,setOrganisation] = useState("Futurios AI");
+  const [organisation,setOrganisation] = useState("");
 
   const [notifications,setNotifications] = useState(true);
 
@@ -18,6 +25,23 @@ export default function SettingsPage() {
   const [saving,setSaving] = useState(false);
 
   const [message,setMessage] = useState("");
+
+  useEffect(() => {
+    if (!organisationId) return;
+
+    const timeout = window.setTimeout(async () => {
+      try {
+        const data = await getSettings(organisationId);
+        setFullName(data.user.full_name ?? "");
+        setEmail(data.user.email);
+        setOrganisation(data.organisation.name);
+      } catch (err) {
+        setMessage(getApiErrorMessage(err, "Unable to load settings."));
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, [organisationId]);
 
 
 
@@ -36,22 +60,17 @@ export default function SettingsPage() {
     try{
 
 
-      console.log({
-
-        fullName,
-
-        email,
-
-        organisation,
-
-        notifications
-
+      const user = await updateProfile({
+        full_name: fullName.trim() || null,
+        email: email.trim(),
       });
+
+      storeCurrentUser(user);
 
 
 
       setMessage(
-        "Changes saved successfully"
+        "Profile changes saved successfully"
       );
 
 
@@ -62,7 +81,7 @@ export default function SettingsPage() {
 
 
       setMessage(
-        "Failed to save changes"
+        getApiErrorMessage(error, "Failed to save profile changes")
       );
 
 
@@ -363,6 +382,8 @@ export default function SettingsPage() {
 
           value={organisation}
 
+          readOnly
+
           onChange={(e)=>
             setOrganisation(e.target.value)
           }
@@ -381,6 +402,20 @@ export default function SettingsPage() {
 
 
 
+
+      {organisationId && (
+        <>
+          <div className="bg-white border border-orange-100 rounded-2xl p-6 mb-6 shadow-sm">
+            <h2 className="text-xl font-bold mb-6 text-gray-900">Subscription & Usage</h2>
+            <SubscriptionCard organisationId={organisationId} />
+          </div>
+
+          <div className="bg-white border border-orange-100 rounded-2xl p-6 mb-6 shadow-sm">
+            <h2 className="text-xl font-bold mb-6 text-gray-900">API Keys</h2>
+            <ApiKeyManager organisationId={organisationId} />
+          </div>
+        </>
+      )}
 
       {/* Preferences */}
 

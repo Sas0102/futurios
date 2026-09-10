@@ -4,13 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getMyOrganisations } from "../services/organisationService";
 import { MyOrganisation } from "../types/organisation";
+import { getActiveAuthStorage } from "@/features/auth/utils/authStorage";
 
 const CURRENT_ORGANISATION_ID_KEY = "current_organisation_id";
 
 export const readStoredOrganisationId = (): number | null => {
   if (typeof window === "undefined") return null;
 
-  const value = window.localStorage.getItem(CURRENT_ORGANISATION_ID_KEY);
+  const value = getActiveAuthStorage()?.getItem(CURRENT_ORGANISATION_ID_KEY);
   if (!value) return null;
 
   const id = Number(value);
@@ -20,7 +21,7 @@ export const readStoredOrganisationId = (): number | null => {
 export const storeCurrentOrganisationId = (organisationId: number) => {
   if (typeof window === "undefined") return;
 
-  window.localStorage.setItem(
+  getActiveAuthStorage()?.setItem(
     CURRENT_ORGANISATION_ID_KEY,
     String(organisationId)
   );
@@ -58,7 +59,7 @@ export function useCurrentOrganisation() {
       if (selectedId) {
         storeCurrentOrganisationId(selectedId);
       } else if (typeof window !== "undefined") {
-        window.localStorage.removeItem(CURRENT_ORGANISATION_ID_KEY);
+        getActiveAuthStorage()?.removeItem(CURRENT_ORGANISATION_ID_KEY);
       }
     } catch (err) {
       console.log(err);

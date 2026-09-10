@@ -2,9 +2,11 @@ export interface UserProfile {
 
   id:number;
 
-  full_name:string;
+  full_name:string | null;
 
   email:string;
+
+  is_super_admin:boolean;
 
 }
 

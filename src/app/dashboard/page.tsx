@@ -1,11 +1,34 @@
+"use client";
+
 import StatCard from "@/features/dashboard/components/StatCard";
 import RecentCallsTable from "@/features/dashboard/components/RecentCallsTable";
 import AgentStatus from "@/features/dashboard/components/AgentStatus";
-
-import { stats } from "@/features/dashboard/data/dummyData";
+import { useDashboardData } from "@/features/dashboard/hooks/useDashboardData";
 
 
 export default function DashboardPage() {
+  const { data, loading, error } = useDashboardData();
+  const callCountsByAgent = data?.calls.reduce<Record<number, number>>(
+    (counts, call) => ({
+      ...counts,
+      [call.agent_id]: (counts[call.agent_id] ?? 0) + 1,
+    }),
+    {}
+  ) ?? {};
+  const agentNamesById = Object.fromEntries(
+    (data?.agents ?? []).map((agent) => [agent.id, agent.name])
+  );
+  const stats = data
+    ? [
+        { title: "Total Calls", value: data.usage.total_calls },
+        { title: "Calls This Month", value: data.usage.calls_this_month },
+        {
+          title: "Active Agents",
+          value: data.agents.filter((agent) => agent.status === "active").length,
+        },
+        { title: "Appointments", value: data.appointments.length },
+      ]
+    : [];
 
   return (
 
@@ -40,6 +63,10 @@ export default function DashboardPage() {
 
       {/* Statistics Cards */}
 
+      {error && <p className="mt-6 text-sm text-red-700">{error}</p>}
+
+      {loading && <p className="mt-6 text-sm text-muted-foreground">Loading dashboard metrics...</p>}
+
       <div className="
         mt-8
         grid
@@ -73,7 +100,12 @@ export default function DashboardPage() {
         pt-6
       ">
 
-        <RecentCallsTable />
+        <RecentCallsTable
+          calls={[...(data?.calls ?? [])]
+            .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+            .slice(0, 4)}
+          agentNamesById={agentNamesById}
+        />
 
       </div>
 
@@ -89,7 +121,10 @@ export default function DashboardPage() {
         pt-6
       ">
 
-        <AgentStatus />
+        <AgentStatus
+          agents={data?.agents ?? []}
+          callCountsByAgent={callCountsByAgent}
+        />
 
       </div>
 

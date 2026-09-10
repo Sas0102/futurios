@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/select";
 
 import { createAgent, updateAgent } from "../services/agentService";
+import { getApiErrorMessage } from "@/lib/apiError";
+import { readStoredOrganisationId } from "@/features/organisations/hooks/useCurrentOrganisation";
 import {
   Agent,
   AgentStatus,
@@ -62,7 +64,7 @@ export interface AgentFormProps {
   mode?: "create" | "edit";
   /** Existing agent to prefill the form with. Required when mode="edit". */
   initialData?: Agent;
-  /** Only used for create — defaults to initialData.organisation_id, then 1. */
+  /** Only used for create — defaults to the selected organisation. */
   organisationId?: number;
   /** Where to redirect after a successful submit. */
   redirectTo?: string;
@@ -226,14 +228,22 @@ export default function AgentForm({
     setLoading(true);
 
     try {
-      const response = isEdit
-        ? await updateAgent(initialData!.id, buildUpdatePayload())
-        : await createAgent(
-            organisationId ?? initialData?.organisation_id ?? 1,
+      if (isEdit) {
+        await updateAgent(initialData!.id, buildUpdatePayload());
+      } else {
+        await createAgent(
+            organisationId ??
+              initialData?.organisation_id ??
+              (() => {
+                const currentOrganisationId = readStoredOrganisationId();
+                if (!currentOrganisationId) {
+                  throw new Error("Select an organisation before creating an agent.");
+                }
+                return currentOrganisationId;
+              })(),
             buildCreatePayload()
           );
-
-      console.log(response);
+      }
 
       setMessage(
         isEdit ? "Agent updated successfully" : "Agent created successfully"
@@ -243,11 +253,13 @@ export default function AgentForm({
         router.push(redirectTo);
       }, 1000);
     } catch (err) {
-      console.log(err);
       setError(
-        isEdit
-          ? "Failed to update agent. Please try again."
-          : "Failed to create agent. Please try again."
+        getApiErrorMessage(
+          err,
+          isEdit
+            ? "Failed to update agent. Please try again."
+            : "Failed to create agent. Please try again."
+        )
       );
     } finally {
       setLoading(false);

@@ -4,6 +4,7 @@ import {
   SignupResponse,
   LoginRequest,
   LoginResponse,
+  AuthUser,
 } from "../types/auth";
 
 // Signup
@@ -19,5 +20,10 @@ export const login = async (
   data: LoginRequest
 ): Promise<LoginResponse> => {
   const response = await api.post("/login", data);
+  return response.data;
+};
+
+export const getCurrentUser = async (): Promise<AuthUser> => {
+  const response = await api.get("/auth/me");
   return response.data;
 };
